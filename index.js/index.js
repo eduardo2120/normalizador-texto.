@@ -1,35 +1,56 @@
 const fs = require('fs');
-const axios = require('axios'); // Ya lo teníamos instalado
-// La dirección de nuestra API de Ollama local
-const OLLAMA_API_URL = 'http://localhost:11434/api/generate';
-// Función principal asíncrona
-async function generarTexto() {
-try {
-// 1. Leer el archivo de entrada (nuestro prompt)
-const promptTexto = fs.readFileSync('entrada.txt', 'utf-8');
-console.log(`💬 Enviando prompt: "${promptTexto}"`);
-// 2. Preparar el cuerpo (payload) para la API de Ollama
-const datosParaAPI = {
-model: "mistral", // El modelo que descargamos
-prompt: promptTexto, // El texto de nuestro archivo
-stream: false // Importante: le pedimos la respuesta completa, no en trozos
-};
-// 3. Realizar la petición HTTP POST con axios
-console.log('Esperando respuesta de Ollama (esto puede tardar)...');
-const respuestaAPI = await axios.post(OLLAMA_API_URL, datosParaAPI);
-// 4. Extraer y guardar la respuesta
-const respuestaTexto = respuestaAPI.data.response;
-fs.writeFileSync('salida.txt', respuestaTexto);
+// Importamos el nuevo SDK oficial de OpenAI
+const OpenAI = require('openai');
 
-console.log(' ¡Éxito! Respuesta guardada en "salida.txt"');
-console.log('Respuesta:', respuestaTexto);
-} catch (error) {
-console.error(' Ha ocurrido un error:');
-if (error.code === 'ECONNREFUSED') {
-console.error('Error: No se pudo conectar. ¿Está Ollama corriendo?');
-} else {
-console.error(error.message);
+// 1. Configuramos el cliente de OpenAI
+const openai = new OpenAI({
+  // ¡LA CLAVE! Apuntamos a nuestro servidor local de LM Studio
+  baseURL: 'http://localhost:1234/v1',
+  // Usamos una clave API ficticia (requerida por el SDK)
+  apiKey: 'not-needed-for-local'
+});
+
+// Función principal asíncrona
+async function chatearConModeloLocal() {
+  try {
+    // 2. Leemos el prompt desde nuestro archivo de entrada
+    const promptUsuario = fs.readFileSync('entrada.txt', 'utf-8');
+    console.log(`Enviando prompt: "${promptUsuario}"`);
+
+    // 3. ¡La nueva forma! Usamos el método 'chat.completions.create'
+    const chatCompletion = await openai.chat.completions.create({
+      // El formato 'messages' es el estándar de OpenAI
+      messages: [
+        {
+          role: 'system',
+          content: 'Eres un analista de negocios experto. Tu trabajo es resumir texto en 3 bullet points clave.'
+        },
+        {
+          role: 'user',
+          content: `Genera un resumen de 3 bullet points del siguiente reporte:\n\n${promptUsuario}`
+        }
+      ],
+      model: 'mistral-7b-instruct', // Cambia aquí el nombre del modelo que cargues en LM Studio
+      temperature: 1.2 // Controla la creatividad
+    });
+
+    // 4. Extraemos y mostramos la respuesta
+    const respuesta = chatCompletion.choices[0].message.content;
+    console.log('\nRespuesta del modelo:\n');
+    console.log(respuesta);
+
+    // 5. Guardamos la respuesta en el archivo de salida
+    fs.writeFileSync('salida.txt', respuesta);
+    console.log('\n✅ Respuesta guardada en "salida.txt"');
+  } catch (error) {
+    console.error('\n❌ Ha ocurrido un error:');
+    if (error.code === 'ECONNREFUSED') {
+      console.error('Error: No se pudo conectar. ¿Iniciaste el servidor en LM Studio?');
+    } else {
+      console.error(error.message);
+    }
+  }
 }
-}
-}
-generarTexto();
+
+// Ejecutamos la función
+chatearConModeloLocal();
