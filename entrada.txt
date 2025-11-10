@@ -1,4 +1,4 @@
-entrada.txt:"El lanzamiento de
+"El lanzamiento de
 nuestro nuevo producto, el 'HydroBot', ha superado las expectativas iniciales en un 150%
 durante el primer trimestre. Los principales impulsores del crecimiento fueron nuestra
 campaña de marketing viral en redes sociales y la adopción positiva por parte de los
